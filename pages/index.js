@@ -14,7 +14,9 @@ export default function HomePage() {
           margin: '60px 0px 20px',
         }}
       >
-        <Posts />
+      
+         <Posts />
+        
       </div>
       <Footer />
     </div>

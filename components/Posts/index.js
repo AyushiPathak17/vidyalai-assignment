@@ -35,41 +35,69 @@ const LoadMoreButton = styled.button(() => ({
 export default function Posts() {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [startIndex, setStartIndex] = useState(0);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [users, setUsers] = useState({});
 
   const { isSmallerDevice } = useWindowWidth();
+  const limit = isSmallerDevice ? 5 : 10;
 
   useEffect(() => {
-    const fetchPost = async () => {
-      const { data: posts } = await axios.get('/api/v1/posts', {
-        params: { start: 0, limit: isSmallerDevice ? 5 : 10 },
+    const fetchPosts = async () => {
+      const { data: fetchedPosts } = await axios.get('/api/v1/posts', {
+        params: { start: startIndex, limit },
       });
-      setPosts(posts);
+      setPosts(fetchedPosts);
+      setStartIndex(startIndex + fetchedPosts.length);
+      setHasMorePosts(fetchedPosts.length === limit);
+      fetchUsersData(fetchedPosts);
     };
 
-    fetchPost();
+    fetchPosts();
   }, [isSmallerDevice]);
 
-  const handleClick = () => {
-    setIsLoading(true);
+  const fetchUsersData = async (fetchedPosts) => {
+    const userIds = fetchedPosts.map(post => post.userId);
+    const usersData = await Promise.all(
+      userIds.map(async userId => {
+        const { data } = await axios.get(`https://jsonplaceholder.typicode.com/users/${userId}`);
+        return data;
+      })
+    );
+    const usersMap = usersData.reduce((acc, user) => {
+      acc[user.id] = user;
+      return acc;
+    }, {});
+    setUsers(usersMap);
+  };
 
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
+  const handleClick = async () => {
+    setIsLoading(true);
+    const { data: fetchedPosts } = await axios.get('/api/v1/posts', {
+      params: { start: startIndex, limit },
+    });
+    setPosts(prevPosts => [...prevPosts, ...fetchedPosts]);
+    setStartIndex(startIndex + fetchedPosts.length);
+    setHasMorePosts(fetchedPosts.length === limit);
+    fetchUsersData(fetchedPosts);
+    setIsLoading(false);
   };
 
   return (
     <Container>
       <PostListContainer>
         {posts.map(post => (
-          <Post post={post} />
+          <Post key={post.id} post={post} user={users[post.userId]} />
         ))}
       </PostListContainer>
 
-      <div style={{ display: 'flex', justifyContent: 'center' }}>
-        <LoadMoreButton onClick={handleClick} disabled={isLoading}>
-          {!isLoading ? 'Load More' : 'Loading...'}
-        </LoadMoreButton>
-      </div>
+      {hasMorePosts && (
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <LoadMoreButton onClick={handleClick} disabled={isLoading}>
+            {!isLoading ? 'Load More' : 'Loading...'}
+          </LoadMoreButton>
+        </div>
+      )}
     </Container>
   );
 }

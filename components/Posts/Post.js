@@ -10,6 +10,39 @@ const PostContainer = styled.div(() => ({
   overflow: 'hidden',
 }));
 
+const UserInfo = styled.div(() => ({
+  display: 'flex',
+  flexDirection: 'column', 
+  alignItems: 'left', 
+  paddingLeft: '10px',
+  marginBottom: '0',
+  borderTopLeftRadius: '5px',
+  borderTopRightRadius: '5px',
+}));
+
+const UserName = styled.span(() => ({
+  fontWeight: 'bold',
+}));
+
+const UserEmail = styled.span(() => ({
+  fontSize: 'smaller', 
+  marginLeft: '65px',
+
+}));
+
+const UserAvatar = styled.div(() => ({
+  width: '55px',
+  height: '55px',
+  borderRadius: '50%',
+  backgroundColor: '#686D76',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: '10px',
+  marginTop: '10px',
+}));
+
+
 const CarouselContainer = styled.div(() => ({
   position: 'relative',
 }));
@@ -23,6 +56,7 @@ const Carousel = styled.div(() => ({
     display: 'none',
   },
   position: 'relative',
+  scrollSnapType: 'x mandatory',
 }));
 
 const CarouselItem = styled.div(() => ({
@@ -46,13 +80,18 @@ const Content = styled.div(() => ({
 
 const Button = styled.button(() => ({
   position: 'absolute',
-  bottom: 0,
+  top: '50%',
+  transform: 'translateY(-50%)',
   backgroundColor: 'rgba(255, 255, 255, 0.5)',
   border: 'none',
   color: '#000',
   fontSize: '20px',
   cursor: 'pointer',
   height: '50px',
+  width: '30px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 }));
 
 const PrevButton = styled(Button)`
@@ -63,13 +102,14 @@ const NextButton = styled(Button)`
   right: 10px;
 `;
 
-const Post = ({ post }) => {
+const Post = ({ post, user }) => {
   const carouselRef = useRef(null);
 
   const handleNextClick = () => {
     if (carouselRef.current) {
+      const imageWidth = carouselRef.current.querySelector('img').offsetWidth;
       carouselRef.current.scrollBy({
-        left: 50,
+        left: imageWidth,
         behavior: 'smooth',
       });
     }
@@ -77,8 +117,9 @@ const Post = ({ post }) => {
 
   const handlePrevClick = () => {
     if (carouselRef.current) {
+      const imageWidth = carouselRef.current.querySelector('img').offsetWidth;
       carouselRef.current.scrollBy({
-        left: -70,
+        left: -imageWidth,
         behavior: 'smooth',
       });
     }
@@ -86,6 +127,20 @@ const Post = ({ post }) => {
 
   return (
     <PostContainer>
+      <UserInfo>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {user && (
+            <UserAvatar>
+              <span style={{ color: '#fff' }}>
+                {user.name.charAt(0).toUpperCase()}
+                {user.name.split(' ')[1] && user.name.split(' ')[1].charAt(0).toUpperCase()}
+              </span>
+            </UserAvatar>
+          )}
+          <UserName>{user && user.name}</UserName>
+        </div>
+        <UserEmail>{user && user.email}</UserEmail>
+      </UserInfo>
       <CarouselContainer>
         <Carousel ref={carouselRef}>
           {post.images.map((image, index) => (
@@ -107,11 +162,17 @@ const Post = ({ post }) => {
 
 Post.propTypes = {
   post: PropTypes.shape({
-    content: PropTypes.any,
-    images: PropTypes.shape({
-      map: PropTypes.func,
-    }),
-    title: PropTypes.any,
+    images: PropTypes.arrayOf(
+      PropTypes.shape({
+        url: PropTypes.string.isRequired,
+      })
+    ).isRequired,
+    title: PropTypes.string.isRequired,
+    body: PropTypes.string.isRequired,
+  }).isRequired,
+  user: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    email: PropTypes.string.isRequired,
   }),
 };
 
